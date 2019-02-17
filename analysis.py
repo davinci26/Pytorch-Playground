@@ -5,32 +5,28 @@ import torchvision
 from visualize import imshow
 import logging
 
+def log_prediction(true_label, predicted_label, predicted_label_index, output_layer):
+    output_layer_pretty_string = ' '.join('%.3f' % out for out in output_layer)
+    logging.info('Ground truth: {} Prediction: {} Argmax: {} Output layer: {}'.format(true_label,predicted_label,predicted_label_index,output_layer_pretty_string))
 
-def model_analysis(net, data):
+
+def model_analysis(net, data, prediction_number = 4):
     _, _, _, testloader, classes = data.get_all()
 
     dataiter = iter(testloader)
     images, labels = dataiter.next()
 
-    # print images
-    imshow(torchvision.utils.make_grid(images))
-    ground_truth_string = ' '.join('%5s' % classes[labels[j]] for j in range(4))
-    logging.info('Ground truth: {}'.format(ground_truth_string))
-
-    ########################################################################
-    # Okay, now let us see what the neural network thinks these examples above are:
-
     outputs = net(images)
-
     _, predicted = torch.max(outputs, 1)
-    prediction_string = ' '.join('%5s' % classes[predicted[j]] for j in range(4))
-    logging.info('Predicted: {}'.format(prediction_string))
-
-    ########################################################################
-    # The results seem pretty good.
-    #
-    # Let us look at how the network performs on the whole dataset.
-
+    
+    logging.info("Making predictions for {} number of images".format(prediction_number))
+    for j in range(prediction_number):
+        ground_truth =  '%5s' % classes[labels[j]]
+        prediction_label = '%5s' % classes[predicted[j]]
+        output_layer = outputs[j].tolist()
+        log_prediction(ground_truth,prediction_label,predicted[j],output_layer)
+    
+    logging.info("Calculating the accuraccy in the whole dataset")
     correct = 0
     total = 0
     with torch.no_grad():
@@ -41,17 +37,9 @@ def model_analysis(net, data):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
-    logging.info('Accuracy of the network on the 10000 test images: %d %%' % (
-        100 * correct / total))
+    logging.info('Accuracy of the network on the 10000 test images: %d %%' % (100 * correct / total))
 
-    ########################################################################
-    # That looks waaay better than chance, which is 10% accuracy (randomly picking
-    # a class out of 10 classes).
-    # Seems like the network learnt something.
-    #
-    # Hmmm, what are the classes that performed well, and the classes that did
-    # not perform well:
-
+    logging.info("Calculating the accuraccy per class")
     class_correct = list(0. for i in range(10))
     class_total = list(0. for i in range(10))
     with torch.no_grad():
@@ -67,10 +55,8 @@ def model_analysis(net, data):
 
 
     for i in range(10):
-        logging.info('Accuracy of %5s : %2d %%' % (
-            classes[i], 100 * class_correct[i] / class_total[i]))
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    logging.info(device)
+        logging.info('Accuracy of %5s : %2d %%' % (classes[i], 100 * class_correct[i] / class_total[i]))
+
     # %%%%%%INVISIBLE_CODE_BLOCK%%%%%%
     del dataiter
     # %%%%%%INVISIBLE_CODE_BLOCK%%%%%%

@@ -1,32 +1,22 @@
 import torch
 import torchvision
 import datetime
+import time
 import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 import json
 import logging
 
-default_training_parameters = {
-    "epoch":2,
-    "model_name": "LeNet",
-    "learning_rate": 0.001,
-    "momentum": 0.9,
-    "description": "Simple LeNet model - Pytorch example"
-    }
 
 def train(data, net, training_parameters, save=True):
 
-    if training_parameters.isspace() or training_parameters is None:
-        logging.info("No training parameteres specified... Using default values")
-        training_parameters = default_training_parameters
-      
     # My setup
     trainloader = data.trainloader
 
     # Optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=training_parameters["learning_rate"], momentum=training_parameters["momentum"])
 
     ########################################################################
     # 4. Train the network
@@ -36,7 +26,7 @@ def train(data, net, training_parameters, save=True):
     # We simply have to loop over our data iterator, and feed the inputs to the
     # network and optimize.
 
-    for epoch in range(2):  # loop over the dataset multiple times
+    for epoch in range(training_parameters["epoch"]):  # loop over the dataset multiple times
 
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
@@ -62,7 +52,11 @@ def train(data, net, training_parameters, save=True):
     
     if save:
         logging.info('Saving the model')
-        torch.save(net.state_dict(),'models/{}-{}.model'.format(net.__class__.__name__, datetime.date.today().strftime("%B-%d-%Y")))
-        params_filename = 'models/{}-{}-parameters.json'.format(net.__class__.__name__, datetime.date.today().strftime("%B-%d-%Y"))
+        # Generate unique string for the file
+        unix_time = '%.0f' % time.mktime(datetime.date.today().timetuple())
+        # save model
+        torch.save(net.state_dict(),'models/{}-{}.model'.format(net.__class__.__name__,unix_time))
+        # save parameters next to the model
+        params_filename = 'models/{}-{}-parameters.json'.format(net.__class__.__name__,unix_time)
         with open(params_filename, 'w') as fp:
-            json.dump(params_filename, fp)
+            json.dump(training_parameters, fp)
