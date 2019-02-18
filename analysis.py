@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torchvision
+import torch.nn as nn
 import logging
 
 def log_prediction(true_label, predicted_label, predicted_label_index, output_layer):
@@ -26,6 +27,19 @@ def make_predictions(batch_number, batch_size, dataset_iterator, classes, net):
                 output_layer = outputs[j].tolist()
                 log_prediction(ground_truth,prediction_label,predicted[j],output_layer)
 
+
+def calculate_loss(dataset_iterator,net,criterion):
+    running_loss = 0
+    item_counter = 0
+    with torch.no_grad():
+        for data in dataset_iterator:
+            # get the inputs
+            inputs, labels = data
+            outputs = net(inputs)
+            loss = criterion(outputs, labels)
+            running_loss += loss.item()
+            item_counter += 1
+    return running_loss / item_counter
 
 def total_accuracy(dataset_iterator,net):
     correct = 0
@@ -64,12 +78,12 @@ def per_class_accuracy(batch_size,dataset_iterator, classes, net):
 
 def model_analysis(net, data, batch_size = 4):
     test_loader = data.valid_loader
+    train_loader = data.train_loader
     classes = data.classes
     make_predictions(1,batch_size,test_loader,classes,net)
     logging.info("Calculating the accuraccy in the whole dataset...")
     total_accuracy(test_loader,net)
     logging.info("Calculating the accuraccy per class...")
     per_class_accuracy(batch_size,test_loader,classes,net)
-    # %%%%%%INVISIBLE_CODE_BLOCK%%%%%%
-    del dataiter
-    # %%%%%%INVISIBLE_CODE_BLOCK%%%%%%
+    logging.info("Cross Entropy loss on training set {:.3f}".format(calculate_loss(train_loader,net,nn.CrossEntropyLoss())))
+    logging.info("Cross Entropy loss on validation set {:.3f}".format(calculate_loss(test_loader,net,nn.CrossEntropyLoss())))

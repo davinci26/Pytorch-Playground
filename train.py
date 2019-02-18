@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import json
 import logging
-
+import analysis as analysis
 
 def train( dataset, net, training_parameters, save=True):
 
@@ -29,10 +29,15 @@ def train( dataset, net, training_parameters, save=True):
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
+
             # print statistics
             running_loss += loss.item()
-            if i % 2000 == 1999:    # print every 2000 mini-batches
-                logging.info('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 2000))
+            if i % training_parameters["checkpoint_interval"] == training_parameters["checkpoint_interval"] - 1:    # print every 2000 mini-batches
+                if training_parameters["calculate_validation"]:
+                    validation_loss = analysis.calculate_loss(dataset.valid_loader,net,criterion)
+                else:
+                    validation_loss = 'N/A'
+                logging.info('[%d, %5d] training loss: %.3f validation loss: %.3f' % (epoch + 1, i + 1, running_loss / 2000,validation_loss))
                 running_loss = 0.0
 
     logging.info('Finished Training')
