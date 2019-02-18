@@ -1,70 +1,168 @@
-# -*- coding: utf-8 -*-
 """
-Training a Classifier
-=====================
-This is it. You have seen how to define neural networks, compute loss and make
-updates to the weights of the network.
-Now you might be thinking,
-What about data?
-----------------
-Generally, when you have to deal with image, text, audio or video data,
-you can use standard python packages that load data into a numpy array.
-Then you can convert this array into a ``torch.*Tensor``.
--  For images, packages such as Pillow, OpenCV are useful
--  For audio, packages such as scipy and librosa
--  For text, either raw Python or Cython based loading, or NLTK and
-   SpaCy are useful
-Specifically for vision, we have created a package called
-``torchvision``, that has data loaders for common datasets such as
-Imagenet, CIFAR10, MNIST, etc. and data transformers for images, viz.,
-``torchvision.datasets`` and ``torch.utils.data.DataLoader``.
-This provides a huge convenience and avoids writing boilerplate code.
-For this tutorial, we will use the CIFAR10 dataset.
-It has the classes: ‘airplane’, ‘automobile’, ‘bird’, ‘cat’, ‘deer’,
-‘dog’, ‘frog’, ‘horse’, ‘ship’, ‘truck’. The images in CIFAR-10 are of
-size 3x32x32, i.e. 3-channel color images of 32x32 pixels in size.
-.. figure:: /_static/img/cifar10.png
-   :alt: cifar10
-   cifar10
-Training an image classifier
-----------------------------
-We will do the following steps in order:
-1. Load and normalizing the CIFAR10 training and test datasets using
-   ``torchvision``
-2. Define a Convolutional Neural Network
-3. Define a loss function
-4. Train the network on the training data
-5. Test the network on the test data
-1. Loading and normalizing CIFAR10
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Using ``torchvision``, it’s extremely easy to load CIFAR10.
+Create train, valid, test iterators for CIFAR-10 [1].
+[1]: https://gist.github.com/kevinzakka/d33bf8d6c7f06a9d8c76d97a7879f5cb
 """
+
 import torch
-import torchvision
-import torchvision.transforms as transforms
+import numpy as np
+from visualize import plot_images
+from torchvision import datasets
+from torchvision import transforms
+from torch.utils.data.sampler import SubsetRandomSampler
+import logging
 
-########################################################################
-# The output of torchvision datasets are PILImage images of range [0, 1].
-# We transform them to Tensors of normalized range [-1, 1].
+class CIFAR10_train:
 
-class DataSetCIFAR10:
+    def __init__(self,
+                data_dir,
+                batch_size,
+                augment,
+                random_seed,
+                split_size=0.1,
+                shuffle=True,
+                show_sample=False,
+                num_workers=4,
+                pin_memory=False):
+        """
+        Utility function for loading and returning train and valid
+        multi-process iterators over the CIFAR-10 dataset. A sample
+        9x9 grid of the images can be optionally displayed.
+        If using CUDA, num_workers should be set to 1 and pin_memory to True.
+        Params
+        ------
+        - data_dir: path directory to the dataset.
+        - batch_size: how many samples per batch to load.
+        - augment: whether to apply the data augmentation scheme
+        mentioned in the paper. Only applied on the train split. TODO: Read this paper
+        - random_seed: fix seed for reproducibility.
+        - split_size: percentage split of the training set used for
+        the validation set. Should be a float in the range [0, 1].
+        - shuffle: whether to shuffle the train/validation indices.
+        - show_sample: plot 9x9 sample grid of the dataset.
+        - num_workers: number of subprocesses to use when loading the dataset.
+        - pin_memory: whether to copy tensors into CUDA pinned memory. Set it to
+        True if using GPU.
+        """
+        if (split_size < 0) or (split_size > 1):
+            error_msg = "Expecting split size between [0,1] but received {}".format(split_size)
+            logging.error(error_msg)
+            raise ValueError(error_msg)
 
-    def __init__(self):
-        transform = transforms.Compose(
-            [transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        normalize = transforms.Normalize(
+            mean=[0.4914, 0.4822, 0.4465],
+            std=[0.2023, 0.1994, 0.2010],
+        )
+        # define transforms
+        valid_transform = transforms.Compose([
+                transforms.ToTensor(),
+                normalize,
+        ])
+        if augment:
+            train_transform = transforms.Compose([
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+            ])
+        else:
+            train_transform = transforms.Compose([
+                transforms.ToTensor(),
+                normalize,
+            ])
 
-        self.trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                                download=True, transform=transform)
-        self.trainloader = torch.utils.data.DataLoader(self.trainset, batch_size=4,
-                                                shuffle=True, num_workers=2)
+        # load the dataset
+        train_dataset = datasets.CIFAR10(
+            root=data_dir, train=True,
+            download=True, transform=train_transform,
+        )
 
-        self.testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                            download=True, transform=transform)
-        self.estloader = torch.utils.data.DataLoader(self.testset, batch_size=4,
-                                                shuffle=False, num_workers=2)
-        self.classes = ('plane', 'car', 'bird', 'cat',
-                'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-    
-    def get_all(self):
-        return self.trainset, self.trainloader, self.testset, self.estloader, self.classes
+        valid_dataset = datasets.CIFAR10(
+            root=data_dir, train=True,
+            download=True, transform=valid_transform,
+        )
+
+        num_train = len(train_dataset)
+        indices = list(range(num_train))
+        split = int(np.floor(split_size * num_train))
+
+        if shuffle:
+            np.random.seed(random_seed)
+            np.random.shuffle(indices)
+
+        train_idx, valid_idx = indices[split:], indices[:split]
+        train_sampler = SubsetRandomSampler(train_idx)
+        valid_sampler = SubsetRandomSampler(valid_idx)
+
+        self.train_loader = torch.utils.data.DataLoader(
+            train_dataset, batch_size=batch_size, sampler=train_sampler,
+            num_workers=num_workers, pin_memory=pin_memory,
+        )
+        self.valid_loader = torch.utils.data.DataLoader(
+            valid_dataset, batch_size=batch_size, sampler=valid_sampler,
+            num_workers=num_workers, pin_memory=pin_memory,
+        )
+        self.classes = [
+                        'airplane',
+                        'automobile',
+                        'bird',
+                        'cat',
+                        'deer',
+                        'dog',
+                        'frog',
+                        'horse',
+                        'ship',
+                        'truck']
+        # visualize some images
+        if show_sample:
+            sample_loader = torch.utils.data.DataLoader(
+                train_dataset, batch_size=9, shuffle=shuffle,
+                num_workers=num_workers, pin_memory=pin_memory,
+            )
+            data_iter = iter(sample_loader)
+            images, labels = data_iter.next()
+            X = images.numpy().transpose([0, 2, 3, 1])
+            plot_images(X, labels)
+
+    def get_dataset_iterators(self):
+        return self.train_loader, self.valid_loader
+
+class CIFAR10_test:
+
+    def __init__(self, data_dir,
+                        batch_size,
+                        shuffle=True,
+                        num_workers=4,
+                        pin_memory=False):
+        """
+        Utility function for loading and returning a multi-process
+        test iterator over the CIFAR-10 dataset.
+        If using CUDA, num_workers should be set to 1 and pin_memory to True.
+        Params
+        ------
+        - data_dir: path directory to the dataset.
+        - batch_size: how many samples per batch to load.
+        - shuffle: whether to shuffle the dataset after every epoch.
+        - num_workers: number of subprocesses to use when loading the dataset.
+        - pin_memory: whether to copy tensors into CUDA pinned memory. Set it to
+        True if using GPU.
+        """
+        normalize = transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225],
+        )
+
+        # define transform
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+        dataset = datasets.CIFAR10(
+            root=data_dir, train=False,
+            download=True, transform=transform,
+        )
+
+        self.data_loader = torch.utils.data.DataLoader(
+            dataset, batch_size=batch_size, shuffle=shuffle,
+            num_workers=num_workers, pin_memory=pin_memory,
+        )

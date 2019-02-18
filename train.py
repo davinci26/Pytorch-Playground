@@ -9,33 +9,21 @@ import json
 import logging
 
 
-def train(data, net, training_parameters, save=True):
-
-    # My setup
-    trainloader = data.trainloader
+def train( dataset, net, training_parameters, save=True):
 
     # Optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=training_parameters["learning_rate"], momentum=training_parameters["momentum"])
 
-    ########################################################################
-    # 4. Train the network
-    # ^^^^^^^^^^^^^^^^^^^^
-    #
-    # This is when things start to get interesting.
-    # We simply have to loop over our data iterator, and feed the inputs to the
-    # network and optimize.
-
     for epoch in range(training_parameters["epoch"]):  # loop over the dataset multiple times
 
         running_loss = 0.0
-        for i, data in enumerate(trainloader, 0):
+        for i, data in enumerate(dataset.train_loader, 0):
             # get the inputs
             inputs, labels = data
 
             # zero the parameter gradients
             optimizer.zero_grad()
-
             # forward + backward + optimize
             outputs = net(inputs)
             loss = criterion(outputs, labels)

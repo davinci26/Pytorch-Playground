@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import argparse
-from dataGenerator import DataSetCIFAR10
+from dataGenerator import *
 import model as model_factory
 import analysis as analysis
 import train_parameters as train_parameters_factory
@@ -16,6 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('-trainNew',action='store_true', default = False, help="Train thhe model")
     parser.add_argument('-trainParameters', type=str, nargs='?', help = "Training parameters json")               
     args = parser.parse_args()
+    
     # Set up logging
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     logging.info("Cli app started execution ...")
@@ -27,13 +28,19 @@ if __name__ == '__main__':
     model_path= args.modelPath
 
     # ML parameters
-    data = DataSetCIFAR10()
+    logging.info("Loading training dataset ...")
+    batch_size = 4
+    data = CIFAR10_train(data_dir = './data', batch_size = batch_size, augment = False, random_seed= 42)
     net = model_factory.Net()
+    
+    # Load or train the model
     if (train or model_path is None):
         logging.info("Starting the model training ...")
         train_parameters = train_parameters_factory.load_parameters(args.trainParameters)
-        model_training.train(data,net,train_parameters)
+        model_training.train(data, net, train_parameters)
     else:
         net.load_state_dict(torch.load(model_path))
+    
+    # Analyze the model performance
     logging.info("Analyzing the performance of the model ...")
-    analysis.model_analysis(net,data)
+    analysis.model_analysis(net, data, batch_size = batch_size)
