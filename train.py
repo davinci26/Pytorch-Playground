@@ -29,7 +29,6 @@ def train( dataset, net, training_parameters, save=True):
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-
             # print statistics
             running_loss += loss.item()
             if i % 2000 == 1999:    # print every 2000 mini-batches
