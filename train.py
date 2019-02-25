@@ -47,8 +47,8 @@ def train( dataset, net, training_parameters, save=True):
         # Generate unique string for the file
         unix_time = '%.0f' % time.mktime(datetime.date.today().timetuple())
         # save model
-        torch.save(net.state_dict(),'models/{}-{}.model'.format(net.__class__.__name__,unix_time))
+        torch.save(net.state_dict(),'saved_models/{}-{}.model'.format(net.__class__.__name__,unix_time))
         # save parameters next to the model
-        params_filename = 'models/{}-{}-parameters.json'.format(net.__class__.__name__,unix_time)
+        params_filename = 'saved_models/{}-{}-parameters.json'.format(net.__class__.__name__,unix_time)
         with open(params_filename, 'w') as fp:
             json.dump(training_parameters, fp)

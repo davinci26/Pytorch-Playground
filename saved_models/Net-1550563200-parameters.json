@@ -1,0 +1,1 @@
+{"epoch": 2, "model_name": "LeNet", "learning_rate": 0.01, "momentum": 0.9, "checkpoint_interval": 2000, "calculate_validation": true, "description": "Baseline LeNet model - Pytorch example"}

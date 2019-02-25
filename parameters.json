@@ -5,5 +5,10 @@
     "momentum": 0.9,
     "checkpoint_interval" : 2000,
     "calculate_validation": true,
+    "HyperParameterOptimization":
+    {
+        "optimize": true,
+        "steps": 3
+    },
     "description": "Baseline LeNet model - Pytorch example"
 }

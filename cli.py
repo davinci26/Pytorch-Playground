@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 from dataGenerator import *
-import model as model_factory
+import model as NN
 import analysis as analysis
 import train_parameters as train_parameters_factory
 import torch
@@ -13,8 +13,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Play around with a convolutional neural network on CIFAR 10')
     parser.add_argument('-modelPath', type=str, nargs='?', help="Load a model")
-    parser.add_argument('-trainNew',action='store_true', default = False, help="Train thhe model")
-    parser.add_argument('-trainParameters', type=str, nargs='?', help = "Training parameters json")               
+    parser.add_argument('-trainNew',action='store_true', default = False, help="Train the model")
+    parser.add_argument('-trainParameters', type=str, nargs='?', help = "Training parameters json")
+    parser.add_argument('-optimize', type=str, nargs='?', help = "Training parameters json")
     args = parser.parse_args()
     
     # Set up logging
@@ -31,7 +32,7 @@ if __name__ == '__main__':
     logging.info("Loading training dataset ...")
     batch_size = 4
     data = CIFAR10_train(data_dir = './data', batch_size = batch_size, augment = False, random_seed= 42)
-    net = model_factory.Net()
+    net = NN.Net()
     
     # Load or train the model
     if (train or model_path is None):
