@@ -13,6 +13,9 @@ class optimizer(ABC):
         for i in range(100):
             search.step()
     """
+    @abstractmethod
+    def __init__(self, variables):
+        self.variables = variables
     
     @abstractmethod
     def step(self):
