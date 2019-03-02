@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import argparse
-from dataGenerator import *
-import model as NN
-import analysis as analysis
-import train_parameters as train_parameters_factory
+from core.data_generator import *
+import core.model as model_factory
+import core.analysis as analysis
+import core.train_parameters as train_parameters_factory
+import core.train as model_training
 import torch
-import train as model_training
 import torchvision.models as models
 import logging
 

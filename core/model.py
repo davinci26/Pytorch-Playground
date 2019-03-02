@@ -7,7 +7,7 @@
 
 import torch.nn as nn
 import torch.nn.functional as F
-import train as train
+import core.train as train
 import torch
 
 class Net(nn.Module):
