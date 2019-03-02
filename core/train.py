@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import json
 import logging
-import analysis as analysis
+import core.analysis as analysis
 
 def train( dataset, net, training_parameters, save=True):
 

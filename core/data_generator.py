@@ -5,7 +5,7 @@ Create train, valid, test iterators for CIFAR-10 [1].
 
 import torch
 import numpy as np
-from visualize import plot_images
+from core.visualize import plot_images
 from torchvision import datasets
 from torchvision import transforms
 from torch.utils.data.sampler import SubsetRandomSampler
