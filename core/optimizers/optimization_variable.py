@@ -19,6 +19,9 @@ class discrete_var(optimization_variable):
         current_index = random.randint(0,self.value_length - 1)
         self.current_value = self.possible_values[current_index]
         return self.current_value
+    
+    def __str__(self):
+        return "Discrete variable\nInitial value:{} Current value:{}".format(self.initial_value, self.current_value)
 
 
 class continuous_var(optimization_variable):
@@ -32,3 +35,6 @@ class continuous_var(optimization_variable):
     def update(self):
         self.current_value = random.uniform(self.lower_bound,self.upper_bound)
         return self.current_value
+
+    def __str__(self):
+        return "Continuous variable\nInitial value:{} Current value:{}".format(self.initial_value, self.current_value)
